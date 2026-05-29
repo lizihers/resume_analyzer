@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 简历分析器 + 岗位匹配</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ═══════════════ 登录/注册界面 ═══════════════ -->
+<div id="authScreen" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h2>AI 简历分析器</h2>
+      <p>你的数据仅自己可见，安全加密存储</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-auth="login">登录</button>
+      <button class="auth-tab" data-auth="register">注册</button>
+    </div>
+    <form id="authForm" class="auth-form">
+      <input type="text" id="authUsername" placeholder="用户名" autocomplete="username" required minlength="2">
+      <input type="password" id="authPassword" placeholder="密码" autocomplete="current-password" required minlength="4">
+      <button type="submit" class="btn btn-primary" id="authSubmit">登录</button>
+    </form>
+    <div id="authError" class="error-msg" style="display:none"></div>
+  </div>
+</div>
+
+<header id="mainHeader" style="display:none">
+  <h1>AI 简历分析器</h1>
+  <nav>
+    <button class="tab active" data-tab="analyze">简历分析</button>
+    <button class="tab" data-tab="match">岗位匹配</button>
+    <button class="tab" data-tab="recommend">职位推荐</button>
+    <button class="tab" data-tab="history">历史记录</button>
+  </nav>
+  <div class="header-right">
+    <span id="apiStatus" class="api-badge checking">检查API...</span>
+    <span class="privacy-badge" title="简历中的姓名、电话、邮箱已自动脱敏">隐私保护</span>
+    <span id="userInfo" class="user-info"></span>
+    <button id="logoutBtn" class="btn-logout">退出</button>
+  </div>
+  </div>
+</header>
+
+<main id="appMain" style="display:none">
+
+<!-- ═══════════════ 简历分析 Tab ═══════════════ -->
+<section id="tab-analyze" class="tab-content active">
+  <div class="split">
+    <!-- 左侧：上传区 -->
+    <div class="panel">
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/>
+            <polyline points="9 15 12 12 15 15"/>
+          </svg>
+        </div>
+        <p>拖拽 PDF / DOCX 到这里，或点击选择</p>
+        <input type="file" id="fileInput" accept=".pdf,.docx,.doc" hidden>
+        <button class="btn btn-outline" id="selectBtn">选择文件</button>
+      </div>
+
+      <div id="parseInfo" style="display:none">
+        <div class="file-badge">
+          <span class="file-name" id="fileName"></span>
+          <span class="file-chars" id="fileChars"></span>
+        </div>
+        <details class="text-preview">
+          <summary>查看解析文本</summary>
+          <pre id="resumePreview"></pre>
+        </details>
+        <button class="btn btn-primary" id="analyzeBtn">开始 AI 分析</button>
+      </div>
+
+      <div id="parseError" class="error-msg" style="display:none"></div>
+    </div>
+
+    <!-- 右侧：分析结果 -->
+    <div class="panel" id="analysisPanel">
+      <div class="loading" id="analyzeLoading" style="display:none">
+        <div class="spinner"></div>
+        <p>AI 正在分析你的简历...</p>
+      </div>
+
+      <div id="analysisResult" style="display:none">
+        <!-- 评分 -->
+        <div class="score-row" id="scoreRow"></div>
+
+        <!-- 学历分析 -->
+        <div class="section" id="eduAnalysisSection">
+          <h3>学历竞争力</h3>
+          <div id="eduAnalysis"></div>
+        </div>
+
+        <!-- 技能 -->
+        <div class="section">
+          <h3>技能</h3>
+          <div id="skillsArea"></div>
+        </div>
+
+        <!-- 经验 -->
+        <div class="section">
+          <h3>经历</h3>
+          <div id="expArea"></div>
+        </div>
+
+        <!-- 优势和弱点 -->
+        <div class="two-col">
+          <div class="section">
+            <h3>优势</h3>
+            <ul id="strengthsList"></ul>
+          </div>
+          <div class="section">
+            <h3>待改进</h3>
+            <ul id="weaknessesList"></ul>
+          </div>
+        </div>
+
+        <!-- 改进建议 -->
+        <div class="section">
+          <h3>改进建议</h3>
+          <div id="suggestionsList"></div>
+        </div>
+      </div>
+
+      <div id="analysisError" class="error-msg" style="display:none"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 岗位匹配 Tab ═══════════════ -->
+<section id="tab-match" class="tab-content">
+  <div class="split">
+    <div class="panel">
+      <h3>职位描述 (JD)</h3>
+      <!-- URL 抓取浮窗 -->
+      <div class="fetch-bar">
+        <input type="url" id="jdUrl" placeholder="粘贴招聘链接，自动抓取JD内容..." class="fetch-input">
+        <button class="btn btn-fetch" id="fetchJdBtn">抓取</button>
+        <span id="fetchStatus" class="fetch-status"></span>
+      </div>
+      <div class="divider-text">或直接粘贴文本</div>
+      <textarea id="jobDesc" placeholder="粘贴职位描述到这里..." rows="14"></textarea>
+      <div class="hint">使用左侧「简历分析」中已解析的简历进行匹配</div>
+      <button class="btn btn-primary" id="matchBtn" disabled>开始岗位匹配</button>
+      <div id="noResumeHint" class="hint-warn" style="display:none">
+        请先在「简历分析」中上传并解析简历
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="loading" id="matchLoading" style="display:none">
+        <div class="spinner"></div>
+        <p>AI 正在分析岗位匹配度...</p>
+      </div>
+
+      <div id="matchResult" style="display:none">
+        <div class="match-score-large" id="matchScoreBig"></div>
+        <div class="section">
+          <h3>匹配技能</h3>
+          <div id="matchSkills"></div>
+        </div>
+        <div class="section">
+          <h3>缺失技能</h3>
+          <div id="missSkills"></div>
+        </div>
+        <div class="section">
+          <h3>差距分析</h3>
+          <div id="gapsList"></div>
+        </div>
+        <div class="section">
+          <h3>建议</h3>
+          <div id="matchRecs"></div>
+        </div>
+        <div class="section" id="optimizationSection">
+          <h3>简历优化方向</h3>
+          <div class="opt-sub">
+            <h4>应加入的关键词</h4>
+            <div id="optKeywords"></div>
+          </div>
+          <div class="opt-sub">
+            <h4>经历改写建议</h4>
+            <div id="optRewrite"></div>
+          </div>
+          <div class="opt-sub">
+            <h4>优先学习技能</h4>
+            <div id="optPriority"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="matchError" class="error-msg" style="display:none"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 职位推荐 Tab ═══════════════ -->
+<section id="tab-recommend" class="tab-content">
+  <div class="split">
+    <div class="panel">
+      <h3>AI 岗位推荐</h3>
+      <p class="hint">基于你的简历背景（技能+学历+经验），AI 推荐适合的岗位方向和目标公司</p>
+      <div class="hint-warn" id="noResumeForRec" style="display:none">
+        请先在「简历分析」中上传并分析简历
+      </div>
+      <button class="btn btn-primary" id="recommendBtn" disabled>开始岗位推荐</button>
+      <div class="loading" id="recLoading" style="display:none">
+        <div class="spinner"></div>
+        <p>AI 正在分析岗位方向...</p>
+      </div>
+      <div id="recError" class="error-msg" style="display:none"></div>
+    </div>
+
+    <div class="panel" id="recResult" style="display:none">
+      <!-- 推荐方向 -->
+      <div class="section">
+        <h3>推荐岗位方向</h3>
+        <div id="recDirections"></div>
+      </div>
+
+      <!-- 目标公司 -->
+      <div class="section">
+        <h3>目标公司</h3>
+        <div id="recCompanies"></div>
+      </div>
+
+      <!-- 职业建议 -->
+      <div class="section">
+        <h3>职业发展建议</h3>
+        <div id="recAdvice"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 历史记录 Tab ═══════════════ -->
+<section id="tab-history" class="tab-content">
+  <table id="historyTable">
+    <thead>
+      <tr><th>ID</th><th>文件名</th><th>时间</th><th>操作</th></tr>
+    </thead>
+    <tbody id="historyBody">
+      <tr><td colspan="4" class="empty">加载中...</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
