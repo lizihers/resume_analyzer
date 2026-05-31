@@ -1345,11 +1345,144 @@ POSITIONS = [
     },
 ]
 
-# Map positions to company tags for matching
-def _match_positions_to_companies(resume_skills: str, analysis_result: dict) -> list:
-    """Pre-select relevant positions based on resume analysis, for the AI to refine."""
-    # This is used to pre-filter positions; the AI does the final matching
-    return POSITIONS  # Return all — AI handles the matching
+# ── 智能预筛选 ──────────────────────────────────────────────────────
+# 通过关键词匹配从88个岗位中预筛选30个最相关的，减少AI token消耗、提升匹配精度
+
+# 技能关键词映射 — 用于从简历中提取技能信号
+SKILL_SIGNALS = {
+    "编程": ["编程", "代码", "开发", "软件", "系统", "算法", "项目"],
+    "AI/ML": ["AI", "深度学习", "机器学习", "神经网络", "PyTorch", "TensorFlow", "YOLO", "模型", "推理", "训练", "NLP", "CV"],
+    "C++": ["C++", "C/C++", "cpp", "STL", "内存", "并发", "多线程", "指针", "RAII", "makefile", "cmake"],
+    "Python": ["Python", "python", "脚本", "pandas", "numpy", "flask", "django"],
+    "Java": ["Java", "Spring", "JVM", "微服务", "MyBatis", "Hibernate"],
+    "Go": ["Go", "Golang", "goroutine", "channel"],
+    "前端": ["React", "Vue", "Angular", "JavaScript", "TypeScript", "HTML", "CSS", "前端"],
+    "嵌入式": ["嵌入式", "MCU", "STM32", "ARM", "RTOS", "FreeRTOS", "驱动", "单片机", "FPGA", "RISC-V"],
+    "IoT": ["IoT", "物联网", "MQTT", "传感器", "边缘计算", "CoAP"],
+    "自动驾驶": ["自动驾驶", "感知", "规划", "控制", "SLAM", "定位", "BEV", "激光雷达", "毫米波"],
+    "芯片": ["芯片", "半导体", "IC", "EDA", "Verilog", "GPU", "CUDA", "NPU", "RTL", "综合"],
+    "机器人": ["机器人", "ROS", "运动控制", "路径规划", "机械臂"],
+    "数据": ["数据", "SQL", "MySQL", "PostgreSQL", "Redis", "ETL", "Hadoop", "Spark", "Flink", "数据仓库"],
+    "云计算": ["云计算", "Docker", "Kubernetes", "云原生", "容器", "微服务", "DevOps", "CI/CD"],
+    "安全": ["安全", "渗透", "漏洞", "密码", "加密", "逆向", "CTF", "网络攻防"],
+    "通信": ["通信", "5G", "LTE", "网络", "协议", "TCP", "信号处理", "射频"],
+    "设计": ["设计", "UI", "UX", "Figma", "PS", "AI", "Photoshop", "Illustrator", "视觉"],
+    "金融": ["金融", "量化", "交易", "风控", "支付", "银行", "证券", "保险"],
+    "生物医药": ["生物", "医药", "基因", "细胞", "临床", "药物", "PCR", "GCP", "GLP", "化学"],
+    "机械": ["机械", "SolidWorks", "CAD", "CATIA", "Pro/E", "UG", "结构", "力学"],
+    "电气": ["电气", "PLC", "变频", "配电", "自动化", "SCADA", "工控"],
+    "土木": ["土木", "建筑", "水利", "BIM", "结构", "岩土", "地质", "桥梁"],
+    "环保": ["环境", "环保", "水处理", "废气", "固废", "碳中和", "生态"],
+    "法律": ["法律", "法务", "合同", "合规", "诉讼", "知识产权", "法考"],
+    "外语": ["英语", "日语", "翻译", "本地化", "口译", "笔译", "雅思", "托福", "专八"],
+    "教育": ["教育", "教学", "教师", "培训", "课程", "教研", "教师资格"],
+    "传媒": ["新媒体", "运营", "内容", "文案", "视频", "剪辑", "社交媒体", "公众号", "短视频"],
+    "财经": ["会计", "审计", "财务", "税务", "CPA", "ACCA", "报表", "核算"],
+    "市场": ["市场", "营销", "品牌", "推广", "广告", "活动策划", "PR"],
+    "人力": ["HR", "人力资源", "招聘", "培训", "绩效", "薪酬", "OD"],
+    "供应链": ["供应链", "采购", "物流", "仓储", "库存", "SAP", "ERP"],
+    "公务员": ["公务员", "选调生", "行测", "申论", "事业编", "体制", "编制"],
+    "农业": ["农业", "种植", "养殖", "土壤", "植保", "农机", "遥感"],
+}
+
+
+def _extract_signals(resume_text: str) -> set:
+    """Extract skill signals from resume text."""
+    signals = set()
+    text_lower = resume_text.lower()
+    for signal, keywords in SKILL_SIGNALS.items():
+        for kw in keywords:
+            if kw.lower() in text_lower:
+                signals.add(signal)
+                break
+    return signals
+
+
+def _smart_filter_positions(resume_text: str, analysis_result: dict | None = None, top_n: int = 35) -> list:
+    """Pre-filter positions to top-N most relevant based on keyword matching.
+
+    Uses a multi-signal scoring approach:
+    1. Direct skill overlap: resume keywords vs position skills (weight: 5x)
+    2. Tag matching: signal categories vs position industry tags (weight: 2x)
+    3. Description overlap: resume signals in position description (weight: 1x)
+    """
+    signals = _extract_signals(resume_text)
+
+    # Also add signals from AI-extracted skills (very accurate)
+    if analysis_result and "error" not in analysis_result:
+        tech_skills = analysis_result.get("skills", {}).get("technical", [])
+        soft_skills = analysis_result.get("skills", {}).get("soft", [])
+        all_extracted = tech_skills + soft_skills
+        for skill in all_extracted:
+            skill_lower = skill.lower()
+            for signal, keywords in SKILL_SIGNALS.items():
+                for kw in keywords:
+                    if kw.lower() in skill_lower:
+                        signals.add(signal)
+                        break
+
+    # Score each position
+    scored = []
+    for pos in POSITIONS:
+        pos_skills = pos.get("skills", [])
+        pos_tags = set(pos.get("tags", []))
+        pos_desc = pos.get("description", "")
+        pos_text = f"{pos['role']} {pos_desc}"
+
+        # 1. Direct skill overlap — most important
+        # Check each position skill against resume signals
+        skill_hits = 0
+        for ps in pos_skills:
+            ps_lower = ps.lower()
+            for signal, keywords in SKILL_SIGNALS.items():
+                if signal in signals:
+                    for kw in keywords:
+                        if kw.lower() in ps_lower:
+                            skill_hits += 1
+                            break
+
+        # 2. Tag overlap
+        tag_overlap = len(signals & pos_tags)
+
+        # 3. Description keyword overlap
+        desc_hits = sum(1 for sig in signals if sig.lower() in pos_text.lower())
+
+        # Weighted score: skills > tags > description
+        score = skill_hits * 5 + tag_overlap * 2 + desc_hits * 1
+
+        scored.append((score, pos))
+
+    # Sort by score descending
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    # Take top-N with non-zero scores
+    selected = [p for s, p in scored if s > 0][:top_n]
+
+    # Fallback: if too few, take top-N regardless
+    if len(selected) < 8:
+        selected = [p for _, p in scored[:top_n]]
+
+    return selected
+
+
+def _smart_filter_companies(selected_positions: list, top_n: int = 60) -> list:
+    """Filter companies to those whose tags match the selected positions."""
+    position_tags = set()
+    for pos in selected_positions:
+        for tag in pos.get("tags", []):
+            position_tags.add(tag)
+
+    scored = []
+    for company in COMPANY_CAREERS:
+        company_tags = set(company.get("tags", []))
+        overlap = len(position_tags & company_tags)
+        scored.append((overlap, company))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    selected = [c for s, c in scored if s > 0][:top_n]
+    if len(selected) < 20:
+        selected = [c for _, c in scored[:top_n]]
+    return selected
 
 
 JOB_RECOMMEND_PROMPT = """你是一个职业规划专家兼招聘顾问。根据求职者的简历（技能、学历、经验），做以下分析：
@@ -1418,25 +1551,44 @@ JOB_RECOMMEND_PROMPT = """你是一个职业规划专家兼招聘顾问。根据
 
 
 def recommend_jobs(resume_text: str, education_analysis: dict | None = None) -> dict:
-    """Based on resume and education analysis, recommend job directions and target companies."""
+    """Based on resume and education analysis, recommend job directions and target companies.
+
+    Uses two-stage matching:
+    1. Local keyword pre-filter: 88 positions → top 35, 300 companies → top 60
+    2. AI deep matching on the reduced set for precise scoring
+    """
     if len(resume_text) > 8000:
         resume_text = resume_text[:8000]
+
+    # ── Stage 1: Smart pre-filter ──────────────────────────────────
+    filtered_positions = _smart_filter_positions(resume_text, education_analysis, top_n=35)
+    filtered_companies = _smart_filter_companies(filtered_positions, top_n=60)
 
     # Build company list
     company_list = "\n".join(
         f"- {c['name']}: {c['url']} ({', '.join(c['tags'])})"
-        for c in COMPANY_CAREERS
+        for c in filtered_companies
     )
 
-    # Build position list
+    # Build position list with full details for AI
     position_list = "\n".join(
-        f"- [{', '.join(p['tags'])}] {p['role']}: 需掌握 {', '.join(p['skills'][:5])}... | {p['salary_range']}"
-        for p in POSITIONS
+        f"- [{', '.join(p['tags'])}] {p['role']}:\n"
+        f"  技能要求: {', '.join(p['skills'])}\n"
+        f"  岗位描述: {p['description'][:120]}\n"
+        f"  薪资: {p['salary_range']}"
+        for p in filtered_positions
     )
 
     prompt = JOB_RECOMMEND_PROMPT.replace("{companies}", company_list)
     prompt = prompt.replace("{positions}", position_list)
 
+    # ── Log filter stats ───────────────────────────────────────────
+    import sys
+    print(f"[MatchFilter] Positions: {len(POSITIONS)}→{len(filtered_positions)}, "
+          f"Companies: {len(COMPANY_CAREERS)}→{len(filtered_companies)}",
+          file=sys.stderr)
+
+    # ── Stage 2: AI deep matching ──────────────────────────────────
     edu_text = ""
     if education_analysis:
         edu_text = (
