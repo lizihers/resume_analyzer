@@ -27,11 +27,11 @@ def _get_pool():
 
 
 def _get_conn():
-    return _pool.getconn()
+    return _get_pool().getconn()
 
 
 def _put_conn(conn):
-    _pool.putconn(conn)
+    _get_pool().putconn(conn)
 
 
 # ── Init ──────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ def init_db():
     """Create tables if not exists."""
     conn = _get_conn()
     try:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
@@ -73,7 +73,7 @@ def init_db():
 def create_user(username: str, password_hash: str) -> int | None:
     conn = _get_conn()
     try:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id",
                 (username, password_hash),
@@ -116,7 +116,7 @@ def get_user_by_id(user_id: int) -> dict | None:
 def save_analysis(user_id: int, filename: str, text: str, analysis_json: str = "") -> int:
     conn = _get_conn()
     try:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 "INSERT INTO analyses (user_id, filename, resume_text, analysis_json) VALUES (%s, %s, %s, %s) RETURNING id",
                 (user_id, filename, text, analysis_json),
@@ -134,7 +134,7 @@ def save_analysis(user_id: int, filename: str, text: str, analysis_json: str = "
 def update_match(analysis_id: int, user_id: int, job_text: str, match_json: str):
     conn = _get_conn()
     try:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 "UPDATE analyses SET match_json = %s, job_text = %s WHERE id = %s AND user_id = %s",
                 (match_json, job_text, analysis_id, user_id),
@@ -189,7 +189,7 @@ def get_all_analyses(user_id: int) -> list[dict]:
 def delete_analysis(analysis_id: int, user_id: int) -> bool:
     conn = _get_conn()
     try:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 "DELETE FROM analyses WHERE id = %s AND user_id = %s",
                 (analysis_id, user_id),

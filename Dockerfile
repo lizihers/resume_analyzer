@@ -12,9 +12,9 @@ ENV HTTP_PROXY=${HTTP_PROXY} \
 
 WORKDIR /app
 
-# Install system deps
+# Install system deps (libpq5 needed for psycopg2)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl && \
+    curl libpq5 && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for caching
