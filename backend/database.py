@@ -1,12 +1,20 @@
 import json
 import os
+from urllib.parse import quote_plus
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/postgres"
-)
+# Support both DATABASE_URL and individual env vars
+_DB_URL = os.getenv("DATABASE_URL", "")
+if _DB_URL:
+    DATABASE_URL = _DB_URL
+else:
+    _host = os.getenv("DB_HOST", "localhost")
+    _port = os.getenv("DB_PORT", "5432")
+    _user = os.getenv("DB_USER", "postgres")
+    _pass = quote_plus(os.getenv("DB_PASSWORD", "postgres"))
+    _name = os.getenv("DB_NAME", "postgres")
+    DATABASE_URL = f"postgresql://{_user}:{_pass}@{_host}:{_port}/{_name}"
 
 _pool = None
 
