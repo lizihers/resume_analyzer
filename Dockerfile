@@ -2,6 +2,14 @@
 
 FROM python:3.12-slim
 
+# Proxy support (via build args or env vars)
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ENV HTTP_PROXY=${HTTP_PROXY} \
+    HTTPS_PROXY=${HTTPS_PROXY} \
+    http_proxy=${HTTP_PROXY} \
+    https_proxy=${HTTPS_PROXY}
+
 WORKDIR /app
 
 # Install system deps
