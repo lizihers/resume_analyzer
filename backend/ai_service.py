@@ -1,8 +1,61 @@
 import json
+import logging
 from openai import OpenAI
 from .config import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
 
 client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
+
+# ── Data loading: DB first, fallback to hardcoded ──────────────────
+
+_DB_LOADED = False
+_DB_COMPANIES = []
+_DB_POSITIONS = []
+
+
+def _load_from_db():
+    """Lazy-load companies and positions from PostgreSQL."""
+    global _DB_LOADED, _DB_COMPANIES, _DB_POSITIONS
+    if _DB_LOADED:
+        return
+    try:
+        from .database import get_all_companies, get_all_positions
+        raw_companies = get_all_companies()
+        raw_positions = get_all_positions()
+
+        # Convert DB format to match hardcoded format
+        _DB_COMPANIES = []
+        for c in raw_companies:
+            tags = c.get("tags", "")
+            _DB_COMPANIES.append({
+                "name": c["name"],
+                "url": c.get("url", ""),
+                "tags": [t.strip() for t in tags.split(",")] if isinstance(tags, str) else tags,
+                "id": c.get("id"),
+            })
+
+        _DB_POSITIONS = raw_positions  # already parsed by get_all_positions
+
+        if _DB_COMPANIES and _DB_POSITIONS:
+            _DB_LOADED = True
+            logging.info(f"Loaded {len(_DB_COMPANIES)} companies and {len(_DB_POSITIONS)} positions from DB")
+            return
+    except Exception as e:
+        logging.warning(f"DB load failed, using hardcoded fallback: {e}")
+
+    # Fallback to hardcoded data
+    _DB_COMPANIES = COMPANY_CAREERS
+    _DB_POSITIONS = POSITIONS
+    _DB_LOADED = True  # Prevent retry
+
+
+def _get_companies() -> list:
+    _load_from_db()
+    return _DB_COMPANIES
+
+
+def _get_positions() -> list:
+    _load_from_db()
+    return _DB_POSITIONS
 
 ANALYSIS_PROMPT = """你是一个专业的简历分析师（Resume Analyst）。请深度分析下面的简历内容，返回严格JSON格式。
 
@@ -1463,7 +1516,8 @@ def _smart_filter_positions(resume_text: str, analysis_result: dict | None = Non
 
     # Score each position
     scored = []
-    for pos in POSITIONS:
+    positions = _get_positions()
+    for pos in positions:
         pos_skills = pos.get("skills", [])
         pos_tags = set(pos.get("tags", []))
         pos_desc = pos.get("description", "")
@@ -1513,7 +1567,7 @@ def _smart_filter_companies(selected_positions: list, top_n: int = 60) -> list:
             position_tags.add(tag)
 
     scored = []
-    for company in COMPANY_CAREERS:
+    for company in _get_companies():
         company_tags = set(company.get("tags", []))
         overlap = len(position_tags & company_tags)
         scored.append((overlap, company))
@@ -1625,8 +1679,8 @@ def recommend_jobs(resume_text: str, education_analysis: dict | None = None) -> 
 
     # ── Log filter stats ───────────────────────────────────────────
     import sys
-    print(f"[MatchFilter] Positions: {len(POSITIONS)}→{len(filtered_positions)}, "
-          f"Companies: {len(COMPANY_CAREERS)}→{len(filtered_companies)}",
+    print(f"[MatchFilter] Positions: {len(_get_positions())}→{len(filtered_positions)}, "
+          f"Companies: {len(_get_companies())}→{len(filtered_companies)}",
           file=sys.stderr)
 
     # ── Stage 2: AI deep matching ──────────────────────────────────
@@ -1657,14 +1711,14 @@ def recommend_jobs(resume_text: str, education_analysis: dict | None = None) -> 
         result = json.loads(content)
 
         # Attach recruitment URLs from position database
-        position_urls = {p["role"]: p.get("recruitment_urls", []) for p in POSITIONS if p.get("recruitment_urls")}
+        position_urls = {p["role"]: p.get("recruitment_urls", []) for p in _get_positions() if p.get("recruitment_urls")}
         for rp in result.get("recommended_positions", []):
             role_name = rp.get("role", "")
             if role_name in position_urls:
                 rp["recruitment_urls"] = position_urls[role_name]
 
         # Attach real URLs from our curated list
-        company_urls = {c["name"]: c["url"] for c in COMPANY_CAREERS}
+        company_urls = {c["name"]: c["url"] for c in _get_companies()}
         for tc in result.get("target_companies", []):
             name = tc.get("company_name", tc.get("name", ""))
             if name in company_urls:
