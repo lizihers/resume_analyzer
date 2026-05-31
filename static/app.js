@@ -548,6 +548,10 @@ function renderRecommendations(r) {
             <span class="pos-skill-label miss">需补充</span>
             ${(p.missing_skills || []).map((s) => `<span class="tag tag-miss">${escapeHtml(s)}</span>`).join("")}
           </div>
+          ${(p.recruitment_urls || []).length > 0 ? `
+          <div class="pos-recruit-links">
+            ${p.recruitment_urls.map((u) => `<a href="${escapeHtml(u.url)}" target="_blank" class="recruit-link">${escapeHtml(u.name)} ↗</a>`).join("")}
+          </div>` : ""}
         </div>
       </div>`).join("");
   } else {

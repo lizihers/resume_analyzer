@@ -1152,6 +1152,10 @@ POSITIONS = [
         "description": "各级政府机关综合管理岗位，负责政策研究、行政管理、公文处理、组织协调等工作。通过国考/省考录用。",
         "salary_range": "8k-20k/月 (视地区和级别)",
         "tags": ["国企"],
+        "recruitment_urls": [
+            {"name": "国家公务员局(国考)", "url": "http://bm.scs.gov.cn"},
+            {"name": "各省人事考试网汇总", "url": "https://www.offcn.com/gjgwy/2025/bmrk_1217/69326.html"},
+        ],
     },
     {
         "role": "公务员 (专业技术类-信息技术)",
@@ -1159,6 +1163,10 @@ POSITIONS = [
         "description": "政府机关信息技术岗位，负责政务系统开发运维、网络安全保障、信息化建设规划、数据资源管理。",
         "salary_range": "10k-22k/月 (视地区和级别)",
         "tags": ["国企", "安全", "信创"],
+        "recruitment_urls": [
+            {"name": "国家公务员局(国考)", "url": "http://bm.scs.gov.cn"},
+            {"name": "中央机关公开遴选", "url": "http://subb.scs.gov.cn"},
+        ],
     },
     {
         "role": "选调生",
@@ -1166,6 +1174,10 @@ POSITIONS = [
         "description": "党政机关定向选拔的优秀应届毕业生，先在基层锻炼2-3年，后调回省市机关。分中央选调、定向选调、普通选调。",
         "salary_range": "8k-18k/月 (视地区和级别)",
         "tags": ["国企"],
+        "recruitment_urls": [
+            {"name": "共产党员网(选调生专栏)", "url": "https://www.12371.cn"},
+            {"name": "各省选调生公告汇总", "url": "https://www.offcn.com/xds/"},
+        ],
     },
     {
         "role": "事业单位专业技术岗",
@@ -1173,6 +1185,10 @@ POSITIONS = [
         "description": "科研院所、高校、医院、文化机构等的专业技术岗位，包括科研助理、实验员、工程师、讲师等。",
         "salary_range": "10k-25k/月 (视单位和地区)",
         "tags": ["国企", "科研"],
+        "recruitment_urls": [
+            {"name": "中国公共招聘网(事业单位)", "url": "http://www.job.mohrss.gov.cn"},
+            {"name": "各省事业单位招聘汇总", "url": "https://www.offcn.com/sydw/"},
+        ],
     },
     {
         "role": "军队文职人员",
@@ -1180,6 +1196,30 @@ POSITIONS = [
         "description": "军队文职岗位，在部队从事技术、医疗、教学、科研等非直接作战工作。待遇参照现役军官，享受军队福利。",
         "salary_range": "10k-25k/月 (视地区和级别)",
         "tags": ["国企", "航天", "通信"],
+        "recruitment_urls": [
+            {"name": "军队人才网(文职招考)", "url": "http://81rc.81.cn"},
+        ],
+    },
+    {
+        "role": "数字政务/信息化工程师",
+        "skills": ["Java/Python", "政务云", "数据库(达梦/人大金仓)", "信创适配", "网络安全", "电子政务", "数据治理"],
+        "description": "负责政府/国企信息化系统建设，包括政务平台开发、信创国产化适配、数据共享交换、网络安全合规。",
+        "salary_range": "15k-30k/月 (应届10k-18k)",
+        "tags": ["国企", "安全", "信创"],
+        "recruitment_urls": [
+            {"name": "国资委央企招聘平台", "url": "https://www.iguopin.com"},
+            {"name": "国家公务员局(参公)", "url": "http://bm.scs.gov.cn"},
+        ],
+    },
+    {
+        "role": "国企IT基础设施运维",
+        "skills": ["Linux/Windows Server", "虚拟化(VMware/KVM)", "存储(SAN/NAS)", "备份容灾", "网络安全等保", "机房管理"],
+        "description": "负责国企数据中心与IT基础设施的运维管理，包括服务器运维、网络管理、等保合规、灾备建设。",
+        "salary_range": "12k-25k/月 (应届8k-15k)",
+        "tags": ["国企", "电力", "通信", "能源", "交通"],
+        "recruitment_urls": [
+            {"name": "国资委央企招聘平台", "url": "https://www.iguopin.com"},
+        ],
     },
     # ===== 工科：机械 / 电气 / 化工 / 材料 =====
     {
@@ -1575,7 +1615,8 @@ def recommend_jobs(resume_text: str, education_analysis: dict | None = None) -> 
         f"- [{', '.join(p['tags'])}] {p['role']}:\n"
         f"  技能要求: {', '.join(p['skills'])}\n"
         f"  岗位描述: {p['description'][:120]}\n"
-        f"  薪资: {p['salary_range']}"
+        f"  薪资: {p['salary_range']}\n"
+        + (f"  招聘入口: {'; '.join(u['name']+': '+u['url'] for u in p.get('recruitment_urls', []))}" if p.get('recruitment_urls') else "")
         for p in filtered_positions
     )
 
@@ -1614,6 +1655,13 @@ def recommend_jobs(resume_text: str, education_analysis: dict | None = None) -> 
             if content.endswith("```"):
                 content = content[:-3]
         result = json.loads(content)
+
+        # Attach recruitment URLs from position database
+        position_urls = {p["role"]: p.get("recruitment_urls", []) for p in POSITIONS if p.get("recruitment_urls")}
+        for rp in result.get("recommended_positions", []):
+            role_name = rp.get("role", "")
+            if role_name in position_urls:
+                rp["recruitment_urls"] = position_urls[role_name]
 
         # Attach real URLs from our curated list
         company_urls = {c["name"]: c["url"] for c in COMPANY_CAREERS}
