@@ -1,145 +1,195 @@
-import sqlite3
 import json
-from pathlib import Path
-from datetime import datetime, timezone, timedelta
+import os
+from psycopg2 import pool
+from psycopg2.extras import RealDictCursor
 
-TZ = timezone(timedelta(hours=8))
-DB_PATH = Path(__file__).parent.parent / "data" / "analyses.db"
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres:postgres@localhost:5432/postgres"
+)
+
+_pool = None
 
 
-def get_db():
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
+def _get_pool():
+    global _pool
+    if _pool is None:
+        _pool = pool.SimpleConnectionPool(1, 10, DATABASE_URL)
+    return _pool
+
+
+def _get_conn():
+    return _pool.getconn()
+
+
+def _put_conn(conn):
+    _pool.putconn(conn)
+
+
+# ── Init ──────────────────────────────────────────────────────────
 
 
 def init_db():
-    conn = get_db()
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL,
-            created_at TEXT DEFAULT (datetime('now','localtime'))
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS analyses (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            created_at TEXT DEFAULT (datetime('now','localtime')),
-            filename TEXT NOT NULL DEFAULT '',
-            resume_text TEXT NOT NULL DEFAULT '',
-            analysis_json TEXT,
-            match_json TEXT,
-            job_text TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    """)
-    # Migration: add user_id if upgrading from old schema
+    """Create tables if not exists."""
+    conn = _get_conn()
     try:
-        conn.execute("SELECT user_id FROM analyses LIMIT 0")
-    except sqlite3.OperationalError:
-        conn.execute("ALTER TABLE analyses ADD COLUMN user_id INTEGER DEFAULT 1")
-    conn.commit()
-    conn.close()
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT NOT NULL UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS analyses (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id),
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    filename TEXT NOT NULL DEFAULT '',
+                    resume_text TEXT NOT NULL DEFAULT '',
+                    analysis_json TEXT,
+                    match_json TEXT,
+                    job_text TEXT
+                )
+            """)
+        conn.commit()
+    finally:
+        _put_conn(conn)
 
 
-# ── Users ───────────────────────────────────────────────────────
+# ── Users ─────────────────────────────────────────────────────────
 
 
 def create_user(username: str, password_hash: str) -> int | None:
-    conn = get_db()
+    conn = _get_conn()
     try:
-        c = conn.execute(
-            "INSERT INTO users (username, password_hash) VALUES (?, ?)",
-            (username, password_hash),
-        )
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id",
+                (username, password_hash),
+            )
+            uid = cur.fetchone()["id"]
         conn.commit()
-        uid = c.lastrowid
-        conn.close()
         return uid
-    except sqlite3.IntegrityError:
-        conn.close()
+    except Exception:
+        conn.rollback()
         return None
+    finally:
+        _put_conn(conn)
 
 
 def get_user_by_username(username: str) -> dict | None:
-    conn = get_db()
-    row = conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
-    conn.close()
-    return dict(row) if row else None
+    conn = _get_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+            row = cur.fetchone()
+        return dict(row) if row else None
+    finally:
+        _put_conn(conn)
 
 
 def get_user_by_id(user_id: int) -> dict | None:
-    conn = get_db()
-    row = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
-    conn.close()
-    return dict(row) if row else None
+    conn = _get_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+            row = cur.fetchone()
+        return dict(row) if row else None
+    finally:
+        _put_conn(conn)
 
 
-# ── Analyses (scoped to user) ───────────────────────────────────
+# ── Analyses ──────────────────────────────────────────────────────
 
 
 def save_analysis(user_id: int, filename: str, text: str, analysis_json: str = "") -> int:
-    conn = get_db()
-    c = conn.execute(
-        "INSERT INTO analyses (user_id, filename, resume_text, analysis_json) VALUES (?, ?, ?, ?)",
-        (user_id, filename, text, analysis_json),
-    )
-    conn.commit()
-    row_id = c.lastrowid
-    conn.close()
-    return row_id
+    conn = _get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO analyses (user_id, filename, resume_text, analysis_json) VALUES (%s, %s, %s, %s) RETURNING id",
+                (user_id, filename, text, analysis_json),
+            )
+            row_id = cur.fetchone()["id"]
+        conn.commit()
+        return row_id
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        _put_conn(conn)
 
 
 def update_match(analysis_id: int, user_id: int, job_text: str, match_json: str):
-    conn = get_db()
-    conn.execute(
-        "UPDATE analyses SET match_json=?, job_text=? WHERE id=? AND user_id=?",
-        (match_json, job_text, analysis_id, user_id),
-    )
-    conn.commit()
-    conn.close()
+    conn = _get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE analyses SET match_json = %s, job_text = %s WHERE id = %s AND user_id = %s",
+                (match_json, job_text, analysis_id, user_id),
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        _put_conn(conn)
 
 
 def get_analysis(analysis_id: int, user_id: int) -> dict | None:
-    conn = get_db()
-    row = conn.execute(
-        "SELECT * FROM analyses WHERE id=? AND user_id=?", (analysis_id, user_id)
-    ).fetchone()
-    conn.close()
-    if row is None:
-        return None
-    d = dict(row)
-    for field in ("analysis_json", "match_json"):
-        if d.get(field):
-            try:
-                d[field] = json.loads(d[field])
-            except json.JSONDecodeError:
-                pass
-    return d
+    conn = _get_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM analyses WHERE id = %s AND user_id = %s",
+                (analysis_id, user_id),
+            )
+            row = cur.fetchone()
+        if row is None:
+            return None
+        d = dict(row)
+        for field in ("analysis_json", "match_json"):
+            if d.get(field):
+                try:
+                    d[field] = json.loads(d[field])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+        # Convert datetime to string for JSON compat
+        if d.get("created_at"):
+            d["created_at"] = str(d["created_at"])
+        return d
+    finally:
+        _put_conn(conn)
 
 
 def get_all_analyses(user_id: int) -> list[dict]:
-    conn = get_db()
-    rows = conn.execute(
-        "SELECT id, created_at, filename FROM analyses WHERE user_id=? ORDER BY id DESC",
-        (user_id,),
-    ).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    conn = _get_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT id, created_at, filename FROM analyses WHERE user_id = %s ORDER BY id DESC",
+                (user_id,),
+            )
+            rows = cur.fetchall()
+        return [{"id": r["id"], "created_at": str(r["created_at"]), "filename": r["filename"]} for r in rows]
+    finally:
+        _put_conn(conn)
 
 
 def delete_analysis(analysis_id: int, user_id: int) -> bool:
-    conn = get_db()
-    c = conn.execute(
-        "DELETE FROM analyses WHERE id=? AND user_id=?", (analysis_id, user_id)
-    )
-    conn.commit()
-    deleted = c.rowcount > 0
-    conn.close()
-    return deleted
+    conn = _get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM analyses WHERE id = %s AND user_id = %s",
+                (analysis_id, user_id),
+            )
+        conn.commit()
+        return cur.rowcount > 0
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        _put_conn(conn)
