@@ -1,6 +1,6 @@
 # AI 简历分析器 + 岗位匹配系统
 
-全栈 AI 求职工具：上传简历 → AI 深度分析 → 岗位精准匹配 → 300+ 公司推荐。
+全栈 AI 求职工具：上传简历 → AI 深度分析 → 岗位精准匹配 → 460+ 公司推荐。
 
 **在线体验**：https://ceoqtdlpwxib.sealoshzh.site
 
@@ -23,9 +23,9 @@
 - 简历优化方向：应加关键词 + 经历改写建议 + 优先学习技能
 
 ### 职位推荐
-- AI 从 **25 个精确岗位** 中选出最匹配的 5-8 个
+- AI 从 **88 个精确岗位** 中选出最匹配的 5-8 个
 - 每个岗位给出匹配度分数 + 已匹配技能 + 需补充技能
-- 从 **300+ 家公司** 中为每个岗位推荐 2-3 家匹配公司
+- 从 **460+ 家公司** 中为每个岗位推荐 2-3 家匹配公司
 - 覆盖：互联网、AI 大模型、自动驾驶、芯片半导体、IoT 嵌入式、机器人、云计算、金融科技、游戏、外资等 20+ 行业
 - 每家公司带招聘官网直达链接
 
@@ -48,7 +48,7 @@
     ├── 隐私脱敏: 正则匹配姓名/电话/邮箱
     ├── URL 抓取: requests + trafilatura + BeautifulSoup
     ├── 用户认证: PBKDF2 + JWT Token
-    └── 数据库: SQLite (WAL 模式)
+    └── 数据库: PostgreSQL (Supabase)
     │
     ▼
 AI 分析引擎
@@ -82,7 +82,10 @@ AI 分析引擎
 简历文本 ──→ 提取技能/经验/学历
                 │
                 ▼
-         与 25 个岗位的技能要求逐一对比
+         与 88 个岗位的技能要求逐一对比
+                │
+                ▼
+         两阶段智能匹配：关键词预筛选 → AI 深度对比
                 │
                 ▼
          返回每个岗位的匹配度 + 已有技能 + 缺失技能
@@ -98,6 +101,7 @@ AI 分析引擎
 ### 前提
 
 - Python 3.12+
+- PostgreSQL 数据库（推荐 [Supabase](https://supabase.com) 免费托管）
 - （可选）Ollama（免费本地 AI）
 
 ### 安装
@@ -106,6 +110,7 @@ AI 分析引擎
 git clone https://github.com/lizihers/resume_analyzer.git
 cd resume_analyzer
 pip install -r requirements.txt
+python seed_db.py    # 初始化职位和公司数据
 ```
 
 ### 配置
@@ -113,7 +118,7 @@ pip install -r requirements.txt
 复制并编辑 `.env`：
 
 ```bash
-# 默认自动检测，也可手动指定
+# ── AI Provider ──
 AI_PROVIDER=auto          # auto / ollama / siliconflow / deepseek
 
 # 硅基流动（免费，推荐）
@@ -127,6 +132,13 @@ OPENAI_MODEL=deepseek-chat
 
 # Ollama（本地免费）
 OLLAMA_MODEL=qwen2.5:7b
+
+# ── PostgreSQL 数据库 ──
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=你的数据库密码
+DB_NAME=postgres
 ```
 
 获取免费 API Key：
@@ -155,6 +167,11 @@ python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 AI_PROVIDER=siliconflow
 SF_API_KEY=你的硅基流动key
 SF_MODEL=deepseek-ai/DeepSeek-V3
+DB_HOST=你的Supabase主机
+DB_PORT=6543
+DB_USER=postgres.xxx
+DB_PASSWORD=你的数据库密码
+DB_NAME=postgres
 ```
 5. 部署完成，获得永久域名
 
@@ -166,6 +183,11 @@ docker run -d -p 8000:8000 \
   -e AI_PROVIDER=siliconflow \
   -e SF_API_KEY=你的key \
   -e SF_MODEL=deepseek-ai/DeepSeek-V3 \
+  -e DB_HOST=你的数据库主机 \
+  -e DB_PORT=5432 \
+  -e DB_USER=postgres \
+  -e DB_PASSWORD=你的数据库密码 \
+  -e DB_NAME=postgres \
   resume-analyzer
 ```
 
@@ -186,18 +208,19 @@ cloudflared tunnel --url http://localhost:8000 --protocol http2 --no-autoupdate
 resume_analyzer/
 ├── backend/
 │   ├── main.py           # FastAPI 入口，路由定义
-│   ├── ai_service.py     # AI 分析 + 300+公司 + 25岗位数据库
+│   ├── ai_service.py     # AI 分析 + 460+公司 + 88岗位数据库
 │   ├── config.py         # 多 Provider 配置 + 自动检测
 │   ├── parser.py         # PDF/DOCX 简历解析
 │   ├── privacy.py        # 姓名/电话/邮箱脱敏
 │   ├── auth.py           # PBKDF2 密码哈希 + JWT Token
-│   ├── database.py       # SQLite 操作
+│   ├── database.py       # PostgreSQL 操作 (Supabase)
 │   └── url_fetcher.py    # JD 链接抓取
 ├── static/
 │   ├── index.html        # 前端页面
 │   ├── app.js            # 前端逻辑
 │   └── style.css         # 样式
-├── data/                 # SQLite 数据库（自动生成）
+├── seed_db.py            # 初始化职位/公司数据到 PostgreSQL
+├── generate_doc.py       # 生成 API 文档
 ├── Dockerfile
 ├── requirements.txt
 ├── .env                  # API 配置（不提交到 Git）
@@ -208,9 +231,7 @@ resume_analyzer/
 
 ## 公司覆盖
 
-300+ 家公司，20+ 行业：
-
-互联网/科技 · AI 大模型 · 自动驾驶 · 芯片/半导体 · IoT/嵌入式 · 机器人 · 云计算/基础设施 · 金融/银行 · 外资企业 · 制造/工业 · 通信/运营商 · 游戏 · 电商/零售 · 医药/医疗 · 教育科技 · 企业服务/SaaS · 安全 · 航天/军工 · 量子计算 · 物流 · 新能源 · 更多...
+460+ 家公司，覆盖互联网/科技 · AI 大模型 · 自动驾驶 · 芯片/半导体 · IoT/嵌入式 · 机器人 · 云计算/基础设施 · 金融/银行 · 外资企业 · 制造/工业 · 通信/运营商 · 游戏 · 电商/零售 · 医药/医疗 · 教育科技 · 企业服务/SaaS · 安全 · 航天/军工 · 量子计算 · 物流 · 新能源 · 公务员/事业单位/军队文职等 20+ 行业。
 
 所有公司均附带官方招聘页面直达链接。
 
