@@ -271,6 +271,114 @@ COMPANY_CAREERS = [
     {"name": "米哈游", "url": "https://careers.mihoyo.com", "tags": ["游戏"]},
     {"name": "莉莉丝", "url": "https://www.lilith.com/careers", "tags": ["游戏"]},
     {"name": "鹰角网络", "url": "https://www.hypergryph.com/careers", "tags": ["游戏"]},
+    {"name": "网易游戏", "url": "https://game.ac.163.com", "tags": ["游戏", "互联网"]},
+    {"name": "完美世界", "url": "https://careers.wanmei.com", "tags": ["游戏"]},
+    {"name": "三七互娱", "url": "https://zhaopin.37.com", "tags": ["游戏"]},
+    {"name": "吉比特", "url": "https://careers.gbits.com", "tags": ["游戏"]},
+    {"name": "叠纸网络", "url": "https://www.papegames.com/careers", "tags": ["游戏"]},
+    {"name": "库洛游戏", "url": "https://www.kurogame.com/careers", "tags": ["游戏"]},
+
+    # ===== 自动驾驶 / 机器人 =====
+    {"name": "小马智行 Pony.ai", "url": "https://pony.ai/careers", "tags": ["自动驾驶", "AI"]},
+    {"name": "文远知行 WeRide", "url": "https://www.weride.ai/careers", "tags": ["自动驾驶", "AI"]},
+    {"name": "Momenta", "url": "https://www.momenta.cn/careers", "tags": ["自动驾驶", "AI"]},
+    {"name": "图森未来 TuSimple", "url": "https://www.tusimple.com/careers", "tags": ["自动驾驶"]},
+    {"name": "禾赛科技", "url": "https://www.hesaitech.com/careers", "tags": ["激光雷达", "自动驾驶"]},
+    {"name": "速腾聚创", "url": "https://www.robosense.cn/careers", "tags": ["激光雷达", "自动驾驶"]},
+    {"name": "宇树科技 Unitree", "url": "https://www.unitree.com/careers", "tags": ["机器人", "AI"]},
+    {"name": "智元机器人 AGIBOT", "url": "https://www.agibot.com/careers", "tags": ["机器人", "AI"]},
+    {"name": "银河通用 Galbot", "url": "https://www.galbot.com/careers", "tags": ["机器人", "AI"]},
+    {"name": "傅利叶智能", "url": "https://www.fftai.com/careers", "tags": ["机器人", "医疗"]},
+    {"name": "追觅科技", "url": "https://www.dreame.com/careers", "tags": ["机器人", "消费电子"]},
+    {"name": "科沃斯", "url": "https://www.ecovacs.cn/careers", "tags": ["机器人", "消费电子"]},
+
+    # ===== 云计算 / 基础设施 =====
+    {"name": "阿里云", "url": "https://careers.aliyun.com", "tags": ["云计算", "AI"]},
+    {"name": "腾讯云", "url": "https://cloud.tencent.com/careers", "tags": ["云计算", "AI"]},
+    {"name": "华为云", "url": "https://career.huawei.com", "tags": ["云计算", "AI"]},
+    {"name": "金山云", "url": "https://www.ksyun.com/careers", "tags": ["云计算"]},
+    {"name": "UCloud 优刻得", "url": "https://www.ucloud.cn/careers", "tags": ["云计算"]},
+    {"name": "青云 QingCloud", "url": "https://www.qingcloud.com/careers", "tags": ["云计算"]},
+    {"name": "火山引擎", "url": "https://www.volcengine.com/careers", "tags": ["云计算", "AI"]},
+
+    # ===== AI 芯片 / 半导体 (补充) =====
+    {"name": "燧原科技", "url": "https://www.enflame-tech.com/careers", "tags": ["AI芯片", "半导体"]},
+    {"name": "昆仑芯", "url": "https://www.kunlunxin.com/careers", "tags": ["AI芯片", "半导体"]},
+    {"name": "天数智芯", "url": "https://www.iluvatar.com/careers", "tags": ["AI芯片", "GPU"]},
+    {"name": "沐曦", "url": "https://www.metax-tech.com/careers", "tags": ["AI芯片", "GPU"]},
+    {"name": "瀚博半导体", "url": "https://www.vastai.com/careers", "tags": ["AI芯片", "半导体"]},
+    {"name": "后摩智能", "url": "https://www.houmou.com/careers", "tags": ["AI芯片", "存算一体"]},
+    {"name": "此芯科技", "url": "https://www.thissilicon.com/careers", "tags": ["芯片", "CPU"]},
+    {"name": "芯驰科技", "url": "https://www.semidrive.com/careers", "tags": ["芯片", "汽车"]},
+    {"name": "兆易创新", "url": "https://www.gigadevice.com/careers", "tags": ["半导体", "存储"]},
+    {"name": "韦尔股份", "url": "https://www.ovt.com.cn/careers", "tags": ["半导体", "图像传感器"]},
+
+    # ===== AI / 大模型 (补充) =====
+    {"name": "硅基流动 SiliconFlow", "url": "https://www.siliconflow.com/careers", "tags": ["AI", "大模型", "推理"]},
+    {"name": "无问芯穹", "url": "https://www.infinigence.com/careers", "tags": ["AI", "大模型", "推理"]},
+    {"name": "面壁智能", "url": "https://www.modelbest.cn/careers", "tags": ["AI", "大模型"]},
+    {"name": "第四范式", "url": "https://www.4paradigm.com/careers", "tags": ["AI", "企业服务"]},
+    {"name": "小冰", "url": "https://www.xiaoice.com/careers", "tags": ["AI", "对话"]},
+    {"name": "云从科技", "url": "https://www.cloudwalk.com/careers", "tags": ["AI", "计算机视觉"]},
+    {"name": "云天励飞", "url": "https://www.intellif.com/careers", "tags": ["AI", "计算机视觉"]},
+    {"name": "思必驰", "url": "https://www.aispeech.com/careers", "tags": ["AI", "语音"]},
+
+    # ===== 数据 / 数据库 =====
+    {"name": "PingCAP", "url": "https://careers.pingcap.com", "tags": ["数据库", "开源", "基础设施"]},
+    {"name": "涛思数据 TDengine", "url": "https://www.taosdata.com/careers", "tags": ["数据库", "开源", "IoT"]},
+    {"name": "星环科技", "url": "https://www.transwarp.io/careers", "tags": ["大数据", "AI"]},
+    {"name": "SelectDB 飞轮科技", "url": "https://www.selectdb.com/careers", "tags": ["数据库", "开源"]},
+
+    # ===== 通信 / 运营商 =====
+    {"name": "中国移动", "url": "https://job.10086.cn", "tags": ["通信", "国企", "云计算"]},
+    {"name": "中国电信", "url": "https://zhaopin.chinatelecom.com.cn", "tags": ["通信", "国企", "云计算"]},
+    {"name": "中国联通", "url": "https://zglt2026.zhaopin.com", "tags": ["通信", "国企"]},
+    {"name": "中国铁塔", "url": "https://zhaopin.chinatowercom.cn", "tags": ["通信", "国企"]},
+
+    # ===== 能源 / 电力 =====
+    {"name": "国家电网", "url": "https://zhaopin.sgcc.com.cn", "tags": ["电力", "国企"]},
+    {"name": "南方电网", "url": "https://zhaopin.csg.cn", "tags": ["电力", "国企"]},
+    {"name": "中石油", "url": "https://zhaopin.cnpc.com.cn", "tags": ["能源", "国企"]},
+    {"name": "中石化", "url": "https://job.sinopec.com", "tags": ["能源", "国企"]},
+
+    # ===== 安全 =====
+    {"name": "奇安信", "url": "https://www.qianxin.com/careers", "tags": ["安全", "AI"]},
+    {"name": "深信服", "url": "https://hr.sangfor.com", "tags": ["安全", "云计算"]},
+    {"name": "绿盟科技", "url": "https://www.nsfocus.com.cn/careers", "tags": ["安全"]},
+
+    # ===== 更多互联网 =====
+    {"name": "知乎", "url": "https://www.zhihu.com/careers", "tags": ["互联网", "内容"]},
+    {"name": "搜狐", "url": "https://hr.sohu.com", "tags": ["互联网", "媒体"]},
+    {"name": "微博", "url": "https://career.sina.com.cn", "tags": ["互联网", "社交"]},
+    {"name": "虎牙", "url": "https://hr.huya.com", "tags": ["互联网", "直播"]},
+    {"name": "斗鱼", "url": "https://www.douyu.com/careers", "tags": ["互联网", "直播"]},
+    {"name": "唯品会", "url": "https://recruitment.corp.vipshop.com", "tags": ["互联网", "电商"]},
+    {"name": "得物", "url": "https://recruit.dewu.com", "tags": ["互联网", "电商"]},
+    {"name": "SHEIN", "url": "https://www.sheingroup.com/careers", "tags": ["互联网", "电商", "出海"]},
+
+    # ===== 教育科技 =====
+    {"name": "作业帮", "url": "https://careers.zuoyebang.com", "tags": ["教育", "AI"]},
+    {"name": "猿辅导", "url": "https://hr.yuanfudao.com", "tags": ["教育", "AI"]},
+
+    # ===== 医药 (补充) =====
+    {"name": "恒瑞医药", "url": "https://www.hengrui.com/careers", "tags": ["医药"]},
+    {"name": "复星医药", "url": "https://www.fosunpharma.com/careers", "tags": ["医药"]},
+    {"name": "泰格医药", "url": "https://www.tigermedgrp.com/careers", "tags": ["医药", "CRO"]},
+
+    # ===== 更多制造 / 工业 =====
+    {"name": "中芯国际", "url": "https://www.smics.com/careers", "tags": ["芯片", "制造"]},
+    {"name": "TCL", "url": "https://careers.tcl.com", "tags": ["消费电子", "制造"]},
+    {"name": "海康威视", "url": "https://www.hikvision.com/cn/careers", "tags": ["安防", "AI", "制造"]},
+    {"name": "大华股份", "url": "https://www.dahuatech.com/careers", "tags": ["安防", "AI"]},
+    {"name": "中兴通讯", "url": "https://job.zte.com.cn", "tags": ["通信", "芯片"]},
+    {"name": "中车集团", "url": "https://www.crrcgc.cc/careers", "tags": ["制造", "交通", "国企"]},
+
+    # ===== 更多金融 =====
+    {"name": "中国银联", "url": "https://career.unionpay.com", "tags": ["金融", "支付"]},
+    {"name": "微众银行", "url": "https://hr.webank.com", "tags": ["银行", "金融科技"]},
+    {"name": "网商银行", "url": "https://www.mybank.cn/careers", "tags": ["银行", "金融科技"]},
+    {"name": "中信建投证券", "url": "https://careers.csc.com.cn", "tags": ["证券", "金融"]},
+    {"name": "华泰证券", "url": "https://job.htsc.com.cn", "tags": ["证券", "金融"]},
 ]
 
 
