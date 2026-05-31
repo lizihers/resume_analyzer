@@ -525,29 +525,63 @@ $("#recommendBtn").addEventListener("click", async () => {
 });
 
 function renderRecommendations(r) {
-  // Directions
-  const dirs = r.recommended_directions || [];
-  $("#recDirections").innerHTML = dirs.length > 0
-    ? dirs.map((d) => `
-      <div class="dir-card">
-        <div class="dir-title">${escapeHtml(d.title || "")}</div>
-        <div class="dir-salary">${escapeHtml(d.salary_range || "")}</div>
-        <div class="dir-reason">${escapeHtml(d.fit_reason || "")}</div>
-      </div>`).join("")
-    : '<p style="color:var(--text-dim)">无</p>';
+  // Positions — render the new position-level matching
+  const positions = r.recommended_positions || [];
+  if (positions.length > 0) {
+    $("#recPositions").style.display = "";
+    $("#recPositions").innerHTML = positions.map((p) => `
+      <div class="position-card">
+        <div class="pos-header">
+          <div class="pos-match-score">${p.match_score || 0}%</div>
+          <div class="pos-info">
+            <div class="pos-role">${escapeHtml(p.role || "")}</div>
+            <div class="pos-salary">${escapeHtml(p.salary_range || "")}</div>
+          </div>
+        </div>
+        <div class="pos-assessment">${escapeHtml(p.fit_assessment || "")}</div>
+        <div class="pos-skills">
+          <div class="pos-skill-group">
+            <span class="pos-skill-label match">已匹配</span>
+            ${(p.matching_skills || []).map((s) => `<span class="tag tag-match">${escapeHtml(s)}</span>`).join("")}
+          </div>
+          <div class="pos-skill-group">
+            <span class="pos-skill-label miss">需补充</span>
+            ${(p.missing_skills || []).map((s) => `<span class="tag tag-miss">${escapeHtml(s)}</span>`).join("")}
+          </div>
+        </div>
+      </div>`).join("");
+  } else {
+    // Fallback to old format
+    const dirs = r.recommended_directions || [];
+    $("#recPositions").innerHTML = dirs.length > 0
+      ? dirs.map((d) => `
+        <div class="dir-card">
+          <div class="dir-title">${escapeHtml(d.title || "")}</div>
+          <div class="dir-salary">${escapeHtml(d.salary_range || "")}</div>
+          <div class="dir-reason">${escapeHtml(d.fit_reason || "")}</div>
+        </div>`).join("")
+      : '<p style="color:var(--text-dim)">AI 正在分析中，请稍后重试</p>';
+  }
 
-  // Companies
+  // Companies — updated format with position-specific matching
   const companies = r.target_companies || [];
   $("#recCompanies").innerHTML = companies.length > 0
-    ? companies.map((c) => `
+    ? companies.map((c) => {
+      const name = c.company_name || c.name || "";
+      const reason = c.reason || c.match_reason || "";
+      const matchPct = c.position_match ? ` · ${c.position_match}%` : "";
+      const role = c.role ? `<div class="co-role">${escapeHtml(c.role)}${matchPct}</div>` : "";
+      return `
       <div class="company-card">
         <span class="co-priority ${c.priority === 'high' ? 'priority-high' : 'priority-medium'}">${c.priority === 'high' ? '推荐' : '备选'}</span>
         <div>
-          <div class="co-name">${escapeHtml(c.name || "")}</div>
-          <div class="co-reason">${escapeHtml(c.match_reason || "")}</div>
+          <div class="co-name">${escapeHtml(name)}</div>
+          ${role}
+          <div class="co-reason">${escapeHtml(reason)}</div>
         </div>
         ${c.career_url ? `<a href="${escapeHtml(c.career_url)}" target="_blank" class="co-link">招聘官网 ↗</a>` : ""}
-      </div>`).join("")
+      </div>`;
+    }).join("")
     : '<p style="color:var(--text-dim)">无</p>';
 
   // Career advice
@@ -642,8 +676,11 @@ async function checkHealth() {
     const resp = await api("/api/health");
     const data = await resp.json();
     const badge = $("#apiStatus");
+    const providerLabel = data.api_provider === "ollama" ? "🆓 Ollama(免费)" :
+                          data.api_provider === "siliconflow" ? "SF(免费)" :
+                          data.api_provider === "deepseek" ? "DS(付费)" : data.api_provider;
     if (data.api_configured) {
-      badge.textContent = `API: ${data.key_preview} | ${data.model}`;
+      badge.textContent = `${providerLabel} | ${data.model}`;
       badge.className = "api-badge ok";
     } else {
       badge.textContent = "API 未配置 → 编辑 .env";

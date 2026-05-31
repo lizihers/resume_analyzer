@@ -1,5 +1,4 @@
 import json
-import sys
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -10,8 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-sys.path.insert(0, str(Path.home()))
-from read_anything import read_url
+from .url_fetcher import read_url
 
 from .config import OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL
 from .database import (
@@ -245,10 +243,13 @@ def api_health():
     if has_key:
         k = OPENAI_API_KEY
         key_preview = k[:4] + "****" + k[-4:] if len(k) > 8 else "****"
+    from .config import AI_PROVIDER, OLLAMA_AVAILABLE
     return {
         "status": "ok",
         "api_configured": has_key,
+        "api_provider": AI_PROVIDER,
         "key_preview": key_preview,
         "model": OPENAI_MODEL,
         "base_url": OPENAI_BASE_URL,
+        "ollama_available": OLLAMA_AVAILABLE,
     }

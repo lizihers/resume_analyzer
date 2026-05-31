@@ -548,6 +548,64 @@ textarea:focus { outline: none; border-color: var(--primary); }
 .dir-card .dir-salary { font-size: 13px; color: var(--green); margin: 2px 0; }
 .dir-card .dir-reason { font-size: 13px; color: var(--text-dim); }
 
+/* ── Position cards (new) ───────────────── */
+.position-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+.position-card:hover { border-color: var(--primary); }
+.pos-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.pos-match-score {
+  font-size: 32px;
+  font-weight: 800;
+  min-width: 64px;
+  text-align: center;
+  background: linear-gradient(135deg, var(--primary), #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.pos-info { flex: 1; }
+.pos-role { font-weight: 700; font-size: 15px; color: var(--text); }
+.pos-salary { font-size: 12px; color: var(--green); margin-top: 2px; }
+.pos-assessment {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: rgba(108,140,255,0.06);
+  border-radius: 6px;
+  line-height: 1.5;
+}
+.pos-skills { display: flex; flex-direction: column; gap: 6px; }
+.pos-skill-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pos-skill-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 42px;
+  text-align: center;
+}
+.pos-skill-label.match { background: rgba(74,222,128,0.15); color: var(--green); }
+.pos-skill-label.miss { background: rgba(248,113,113,0.15); color: var(--red); }
+
+.co-role { font-size: 12px; color: var(--primary); margin: 2px 0; }
+
 /* ── Optimization section ───────────────── */
 .opt-sub {
   margin-bottom: 14px;

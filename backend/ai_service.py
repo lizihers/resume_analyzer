@@ -694,31 +694,254 @@ COMPANY_CAREERS = [
 ]
 
 
-JOB_RECOMMEND_PROMPT = """你是一个职业规划专家。根据求职者的简历（技能、学历、经验），推荐适合的岗位方向，并匹配真实的公司。
+# ── 岗位数据库 ──────────────────────────────────────────────────────
+# 每个岗位包含: 岗位名称、核心技能、岗位描述、薪资范围、匹配行业标签
 
-分析维度：
-1. recommended_directions: 根据简历背景，推荐 3-4 个适合的岗位方向（如"AI推理引擎开发"、"自动驾驶感知算法"、"云计算基础设施"等），每个包含：
-   - title: 岗位名称
-   - fit_reason: 为什么适合（结合简历中的具体技能和经验）
-   - salary_range: 预估薪资范围（以中国市场为准，如"15k-25k/月"或"年薪20w-35w"）
-2. target_companies: 从提供的公司列表中，筛选 6-8 个最匹配的公司，按推荐度排序，包含：
-   - name: 公司名
-   - match_reason: 匹配原因（1句话）
+POSITIONS = [
+    # ===== AI 推理 / 部署 (核心方向) =====
+    {
+        "role": "AI推理引擎开发工程师",
+        "skills": ["C++", "CUDA", "TensorRT", "ONNX", "模型量化", "推理优化", "算子开发"],
+        "description": "负责深度学习模型的高性能推理部署，包括模型量化/剪枝/蒸馏、GPU算子开发、推理框架优化。在端侧(手机/嵌入式)或云端(GPU集群)实现低延迟高吞吐推理。",
+        "salary_range": "25k-55k/月 (应届20k-35k)",
+        "tags": ["AI", "推理", "芯片", "AI芯片", "嵌入式AI", "基础设施"],
+    },
+    {
+        "role": "AI模型部署工程师 (MLOps)",
+        "skills": ["Python", "Docker", "Kubernetes", "TensorFlow/PyTorch", "ONNX", "Triton Server", "CI/CD"],
+        "description": "负责AI模型的线上部署和运维，搭建模型服务化(Serving)平台，管理模型版本、AB测试、灰度发布、性能监控。",
+        "salary_range": "22k-50k/月 (应届18k-30k)",
+        "tags": ["AI", "云计算", "互联网", "大模型"],
+    },
+    {
+        "role": "高性能计算工程师 (HPC/AI)",
+        "skills": ["C++", "CUDA/OpenCL", "MPI", "分布式系统", "GPU集群", "性能调优", "Linux内核"],
+        "description": "负责大规模分布式训练/推理系统的性能优化，包括GPU集群调度、集合通信优化(NCCL)、混合并行策略(数据并行/模型并行/流水线并行)。",
+        "salary_range": "30k-60k/月 (应届22k-38k)",
+        "tags": ["AI", "芯片", "GPU", "云计算", "大模型", "基础设施"],
+    },
+    # ===== 自动驾驶 =====
+    {
+        "role": "自动驾驶感知算法工程师",
+        "skills": ["Python", "C++", "PyTorch", "3D目标检测", "BEV感知", "Occupancy Network", "点云处理", "多传感器融合"],
+        "description": "负责自动驾驶感知算法研发，包括视觉/BEV/激光雷达3D目标检测、Occupancy预测、多传感器融合、端到端感知模型。",
+        "salary_range": "28k-55k/月 (应届22k-35k)",
+        "tags": ["自动驾驶", "AI", "汽车"],
+    },
+    {
+        "role": "自动驾驶规划控制工程师",
+        "skills": ["C++", "ROS/ROS2", "路径规划", "运动控制", "MPC", "优化算法", "仿真"],
+        "description": "负责自动驾驶决策规划与控制算法，包括行为决策、轨迹规划、运动控制、仿真验证。",
+        "salary_range": "25k-50k/月 (应届20k-32k)",
+        "tags": ["自动驾驶", "汽车"],
+    },
+    {
+        "role": "自动驾驶系统集成工程师",
+        "skills": ["C++", "Linux", "嵌入式系统", "传感器驱动", "中间件(ROS/DDS)", "实时系统"],
+        "description": "负责自动驾驶系统软件架构与集成，包括传感器驱动开发、中间件适配、实时系统优化、整车联调。",
+        "salary_range": "22k-45k/月 (应届18k-28k)",
+        "tags": ["自动驾驶", "汽车", "嵌入式"],
+    },
+    {
+        "role": "SLAM与定位算法工程师",
+        "skills": ["C++", "SLAM", "多传感器融合", "IMU/GPS", "卡尔曼滤波", "因子图优化", "视觉里程计"],
+        "description": "负责自动驾驶/机器人定位与建图算法，包括视觉SLAM、激光SLAM、多传感器融合定位、高精地图匹配。",
+        "salary_range": "25k-50k/月 (应届20k-33k)",
+        "tags": ["自动驾驶", "机器人", "AI"],
+    },
+    # ===== 嵌入式 / IoT =====
+    {
+        "role": "嵌入式软件工程师 (C/C++)",
+        "skills": ["C/C++", "RTOS/FreeRTOS", "Linux驱动", "ARM架构", "SPI/I2C/UART", "低功耗设计", "调试(JTAG/GDB)"],
+        "description": "负责嵌入式系统软件开发，包括MCU固件、Linux驱动、RTOS移植、外设驱动、低功耗优化、硬件调试。",
+        "salary_range": "18k-40k/月 (应届15k-25k)",
+        "tags": ["IoT", "嵌入式", "芯片", "消费电子", "汽车"],
+    },
+    {
+        "role": "边缘计算开发工程师",
+        "skills": ["C++", "Python", "边缘推理(TensorRT/ONNX Runtime)", "Linux", "Docker", "MQTT", "边缘AI部署"],
+        "description": "负责边缘计算节点上的AI模型部署和系统开发，包括模型轻量化、边缘推理优化、设备管理、边缘-云协同。",
+        "salary_range": "20k-42k/月 (应届16k-28k)",
+        "tags": ["IoT", "边缘计算", "AI", "嵌入式AI", "云计算"],
+    },
+    {
+        "role": "IoT平台开发工程师",
+        "skills": ["Python/Go", "MQTT/CoAP", "时序数据库", "微服务", "设备管理", "OTA升级", "云原生"],
+        "description": "负责IoT云平台后端开发，包括设备接入与管理、消息路由、数据存储与分析、规则引擎、设备影子。",
+        "salary_range": "20k-40k/月 (应届15k-25k)",
+        "tags": ["IoT", "云计算", "互联网"],
+    },
+    # ===== 后端 / 基础设施 =====
+    {
+        "role": "C++后端开发工程师",
+        "skills": ["C++11/14/17", "STL/Boost", "多线程", "网络编程(TCP/UDP)", "Linux系统编程", "内存管理", "性能优化"],
+        "description": "负责高性能C++服务端开发，包括网络服务、存储引擎、消息队列、RPC框架等基础设施组件的设计与实现。",
+        "salary_range": "22k-48k/月 (应届18k-30k)",
+        "tags": ["互联网", "基础设施", "数据库", "通信"],
+    },
+    {
+        "role": "数据库内核开发工程师",
+        "skills": ["C/C++", "数据库原理", "存储引擎", "SQL优化", "分布式共识(Raft/Paxos)", "索引结构(B+Tree/LSM)"],
+        "description": "负责数据库内核开发，包括SQL引擎、存储引擎、事务管理、分布式一致性、查询优化器的设计与实现。",
+        "salary_range": "28k-55k/月 (应届22k-35k)",
+        "tags": ["数据库", "基础设施", "开源"],
+    },
+    {
+        "role": "云计算研发工程师",
+        "skills": ["Go/C++", "Kubernetes", "Docker", "虚拟化", "SDN", "分布式存储", "微服务架构"],
+        "description": "负责云计算平台核心组件研发，包括容器编排、存储/网络虚拟化、资源调度、弹性伸缩、混合云管理。",
+        "salary_range": "25k-50k/月 (应届20k-30k)",
+        "tags": ["云计算", "基础设施", "互联网"],
+    },
+    # ===== 芯片 / 半导体 =====
+    {
+        "role": "AI芯片架构工程师",
+        "skills": ["C++", "计算机体系结构", "深度学习", "性能建模", "Verilog/SystemVerilog", "片上网络(NoC)"],
+        "description": "负责AI加速芯片架构设计，包括NPU/GPU架构探索、性能建模与仿真、数据流设计、编译器联合优化。",
+        "salary_range": "30k-60k+ (应届25k-40k)",
+        "tags": ["AI芯片", "芯片", "半导体"],
+    },
+    {
+        "role": "GPU软件开发工程师",
+        "skills": ["C++", "CUDA", "OpenGL/Vulkan", "图形学", "并行计算", "驱动开发", "编译器"],
+        "description": "负责GPU软件栈开发，包括CUDA/OpenCL运行时、图形驱动、编译器后端、性能分析工具。",
+        "salary_range": "28k-55k/月 (应届22k-35k)",
+        "tags": ["芯片", "GPU", "AI芯片"],
+    },
+    {
+        "role": "EDA软件开发工程师",
+        "skills": ["C++", "算法", "图论", "计算几何", "优化理论", "分布式计算", "Verilog基础"],
+        "description": "负责EDA工具软件开发，包括逻辑综合、布局布线、时序分析、物理验证等核心算法的实现与优化。",
+        "salary_range": "25k-50k/月 (应届20k-32k)",
+        "tags": ["EDA", "芯片", "半导体"],
+    },
+    {
+        "role": "固件/驱动开发工程师",
+        "skills": ["C", "ARM/RISC-V架构", "Linux内核", "设备驱动", "U-Boot/BIOS", "硬件调试", "RTOS"],
+        "description": "负责芯片BSP/固件/驱动开发，包括Bootloader、Linux内核驱动、硬件抽象层、板级支持包。",
+        "salary_range": "20k-45k/月 (应届16k-26k)",
+        "tags": ["芯片", "嵌入式", "IoT"],
+    },
+    # ===== 机器人 =====
+    {
+        "role": "机器人软件工程师",
+        "skills": ["C++", "Python", "ROS/ROS2", "运动控制", "路径规划", "计算机视觉", "传感器融合"],
+        "description": "负责机器人软件系统开发，包括运动规划、控制算法、视觉感知、仿真环境搭建、系统集成。",
+        "salary_range": "22k-45k/月 (应届17k-28k)",
+        "tags": ["机器人", "AI"],
+    },
+    {
+        "role": "机器人操作系统开发工程师",
+        "skills": ["C++", "Linux", "实时系统", "中间件(DDS/ZMQ)", "分布式通信", "状态机", "确定性调度"],
+        "description": "负责机器人操作系统/中间件的底层开发，包括实时通信框架、确定性调度、硬件抽象、安全机制。",
+        "salary_range": "25k-50k/月 (应届20k-30k)",
+        "tags": ["机器人", "嵌入式", "基础设施"],
+    },
+    # ===== 计算机视觉 / 感知 =====
+    {
+        "role": "计算机视觉算法工程师",
+        "skills": ["Python", "PyTorch", "OpenCV", "目标检测/分割", "图像分类", "GAN/扩散模型"],
+        "description": "负责计算机视觉算法研发，包括图像分类、目标检测、语义分割、图像生成、视觉特征提取。",
+        "salary_range": "25k-50k/月 (应届20k-32k)",
+        "tags": ["AI", "计算机视觉", "互联网"],
+    },
+    # ===== NLP / 大模型 =====
+    {
+        "role": "大模型应用开发工程师",
+        "skills": ["Python", "LangChain/LlamaIndex", "RAG", "Prompt Engineering", "向量数据库", "API开发", "微调(LoRA)"],
+        "description": "负责基于大语言模型的应用开发，包括RAG系统搭建、Agent开发、模型微调、Prompt优化、应用部署。",
+        "salary_range": "22k-48k/月 (应届18k-30k)",
+        "tags": ["AI", "大模型", "互联网"],
+    },
+    {
+        "role": "AI框架开发工程师",
+        "skills": ["C++/Python", "编译器(MLIR/TVM)", "自动微分", "计算图优化", "分布式训练", "算子库开发"],
+        "description": "负责深度学习框架(PyTorch/TensorFlow/JAX)或AI编译器(TVM/MLIR/XLA)的底层开发与优化。",
+        "salary_range": "30k-60k/月 (应届25k-38k)",
+        "tags": ["AI", "基础设施", "大模型"],
+    },
+    # ===== 通用开发 =====
+    {
+        "role": "软件开发工程师 (C++/系统方向)",
+        "skills": ["C++", "数据结构", "算法", "操作系统", "网络编程", "设计模式", "代码重构"],
+        "description": "负责底层系统/中间件/核心组件的C++开发，包括性能优化、内存管理、并发编程、跨平台适配。",
+        "salary_range": "20k-40k/月 (应届15k-25k)",
+        "tags": ["互联网", "基础设施", "通信", "芯片", "汽车"],
+    },
+    {
+        "role": "后端开发工程师 (Go/Java)",
+        "skills": ["Go/Java", "微服务", "MySQL/Redis", "消息队列(Kafka/RabbitMQ)", "分布式系统", "API设计"],
+        "description": "负责后端服务开发，包括API设计、业务逻辑实现、数据存储、缓存策略、系统架构设计。",
+        "salary_range": "20k-42k/月 (应届15k-25k)",
+        "tags": ["互联网", "金融科技", "SaaS"],
+    },
+]
+
+# Map positions to company tags for matching
+def _match_positions_to_companies(resume_skills: str, analysis_result: dict) -> list:
+    """Pre-select relevant positions based on resume analysis, for the AI to refine."""
+    # This is used to pre-filter positions; the AI does the final matching
+    return POSITIONS  # Return all — AI handles the matching
+
+
+JOB_RECOMMEND_PROMPT = """你是一个职业规划专家兼招聘顾问。根据求职者的简历（技能、学历、经验），做以下分析：
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 分析任务：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. recommended_positions: 从下面的「可选岗位列表」中，选出 5-8 个最适合该求职者的具体岗位，按匹配度排序。每个岗位包含：
+   - role: 岗位名称 (必须从岗位列表中选择)
+   - match_score: 岗位匹配度 0-100 (基于技能重叠度、经验匹配度、学历匹配度)
+   - matching_skills: 求职者已有且匹配的技能 (从中选择，不要编造)
+   - missing_skills: 该岗位要求但求职者缺失的关键技能 (列2-4个最重要的)
+   - fit_assessment: 简短评估 (1-2句话，说明为什么适合，需要补什么)
+
+2. target_companies: 从下面的「可选公司列表」中，为每个推荐岗位匹配 2-3 家最合适的公司，组合成一个列表（共12-18条）。每条包含：
+   - company_name: 公司名 (只能从公司列表中选择)
+   - role: 对应的岗位
+   - position_match: 该公司该岗位的匹配度 0-100
+   - reason: 为什么这家公司适合 (1句话，结合公司业务方向)
    - priority: 推荐优先级 (high/medium)
-3. career_advice: 职业发展建议（2-3条）
 
-返回格式：
+3. career_advice: 针对求职者当前阶段，给出 3-4 条具体的职业发展建议（学习路线、项目方向、投递策略）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 返回JSON格式：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 {
-  "recommended_directions": [
-    {"title": "", "fit_reason": "", "salary_range": ""}
+  "recommended_positions": [
+    {
+      "role": "",
+      "match_score": 0,
+      "matching_skills": [...],
+      "missing_skills": [...],
+      "fit_assessment": ""
+    }
   ],
   "target_companies": [
-    {"name": "", "match_reason": "", "priority": ""}
+    {
+      "company_name": "",
+      "role": "",
+      "position_match": 0,
+      "reason": "",
+      "priority": ""
+    }
   ],
   "career_advice": [...]
 }
 
-重要：target_companies只能从我提供的下面这个公司列表中选择，不要编造不存在的公司。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ 重要规则：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- recommended_positions 中的 role 必须从可选岗位列表中选择，不要编造
+- target_companies 中的 company_name 必须从可选公司列表中选择，不要编造
+- 匹配度打分要诚实，不要虚高。一般应届生的岗位匹配度在40-75之间
+- matching_skills 只能列求职者简历中真实存在的技能
+
+=== 可选岗位列表 ===
+{positions}
 
 === 可选公司列表 ===
 {companies}
@@ -731,11 +954,20 @@ def recommend_jobs(resume_text: str, education_analysis: dict | None = None) -> 
     if len(resume_text) > 8000:
         resume_text = resume_text[:8000]
 
+    # Build company list
     company_list = "\n".join(
         f"- {c['name']}: {c['url']} ({', '.join(c['tags'])})"
         for c in COMPANY_CAREERS
     )
+
+    # Build position list
+    position_list = "\n".join(
+        f"- [{', '.join(p['tags'])}] {p['role']}: 需掌握 {', '.join(p['skills'][:5])}... | {p['salary_range']}"
+        for p in POSITIONS
+    )
+
     prompt = JOB_RECOMMEND_PROMPT.replace("{companies}", company_list)
+    prompt = prompt.replace("{positions}", position_list)
 
     edu_text = ""
     if education_analysis:
@@ -766,7 +998,7 @@ def recommend_jobs(resume_text: str, education_analysis: dict | None = None) -> 
         # Attach real URLs from our curated list
         company_urls = {c["name"]: c["url"] for c in COMPANY_CAREERS}
         for tc in result.get("target_companies", []):
-            name = tc.get("name", "")
+            name = tc.get("company_name", tc.get("name", ""))
             if name in company_urls:
                 tc["career_url"] = company_urls[name]
             else:
